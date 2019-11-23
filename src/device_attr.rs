@@ -45,7 +45,7 @@ impl DeviceAttributes {
         None
     }
 
-    fn lookup_id(txt: &Vec<String>) -> Option<String> {
+    fn lookup_id(txt: &[String]) -> Option<String> {
         txt.iter().find(|s| s.starts_with("id=")).map(|s| {
             // id is ascii
             let id = s[3..].to_string();

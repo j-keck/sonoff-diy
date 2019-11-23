@@ -1,10 +1,10 @@
-use crate::Binary;
-use log::{debug, info};
-use serde_json::{json, Value};
-use std::error::Error;
-use std::net::IpAddr;
+use crate::*;
+use log::debug;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value, to_string_pretty, from_str};
+use std::{fmt, net::IpAddr};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Device {
     pub name: String,
     pub id: String,
@@ -24,29 +24,50 @@ impl Device {
         }
     }
 
-    pub fn info(&self) -> Result<Value, Box<dyn Error>> {
+    pub fn info(&self) -> Result<String> {
         let payload = json!({
             "deviceid": &self.id,
             "data": {},
         });
 
-        self.post("info", payload)?
-            .get_mut("data")
-            .map(|v| v.take())
-            .ok_or("'data' in response not found".into())
+        match self
+            .post("info", payload)?
+            .get("data")
+        {
+            Some(Value::String(ref data)) => {
+                Ok(to_string_pretty(&from_str::<Value>(data)?)?)
+            },
+            _ => Err(Error::JSONLookupError {
+                msg: "'data' in response not found".to_string(),
+            }),
+        }
     }
 
-    pub fn unlock(&self) {
+    pub fn switch(&self, state: SwitchState) -> Result<String> {
+        let state = match state {
+            SwitchState::On => "on",
+            SwitchState::Off => "off",
+        };
+
+        let payload = json!({
+            "deviceid": &self.id,
+            "data": {
+                "switch": state,
+            },
+        });
+        self.post_("switch", payload)
+    }
+
+    pub fn unlock(&self) -> Result<String> {
         let payload = json!({
             "deviceid": &self.id,
             "data": {},
         });
 
-        info!("unlock");
-        println!("{:?}", self.post("ota_unlock", payload));
+        self.post_("ota_unlock", payload)
     }
 
-    pub fn wifi<S>(&self, ssid: S, pwd: S)
+    pub fn wifi<S>(&self, ssid: S, pwd: S) -> Result<String>
     where
         S: Into<String>,
     {
@@ -58,12 +79,12 @@ impl Device {
             },
         });
 
-        info!("wifi");
-        println!("{:?}", self.post("wifi", payload));
+        self.post_("wifi", payload)
     }
 
-    pub fn flash<S>(&self, endpoint: S, bin: &Binary)
-        where S: Into<String>
+    pub fn flash<S>(&self, endpoint: S, bin: &Binary) -> Result<String>
+    where
+        S: Into<String>,
     {
         let payload = json!({
             "deviceid": &self.id,
@@ -73,22 +94,42 @@ impl Device {
             },
         });
 
-        info!("flash");
-        println!("{:?}", self.post("ota_flash", payload));
+        self.post_("ota_flash", payload)
     }
 
-    fn post<S>(&self, p: S, payload: Value) -> Result<Value, Box<dyn Error>>
+    fn post<S>(&self, p: S, payload: Value) -> Result<Value>
     where
         S: Into<String>,
     {
         let client = reqwest::Client::new();
         let url = format!("http://{}:{}/zeroconf/{}", self.ip, self.port, p.into());
-        debug!("post to: {}, payload: {:?}", url, payload);
-        client
+        debug!("post to: {} with payload: {:?}", url, serde_json::to_string(&payload));
+        let res = client
             .post(&url)
             .json(&payload)
             .send()?
             .json()
-            .map_err(|e| e.into())
+            .map_err(|e| e.into());
+        debug!("response: {:#?}", res);
+        res
+    }
+
+    fn post_<S>(&self, p: S, payload: Value) -> Result<String>
+    where
+        S: Into<String>
+    {
+        let value = self.post(p, payload)?;
+        Ok(to_string_pretty(&value)?)
+    }
+
+}
+
+impl fmt::Display for Device {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "device-name: {}, id: {}, ip: {}",
+            self.name, self.id, self.ip
+        )
     }
 }

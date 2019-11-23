@@ -1,6 +1,6 @@
-use crate::{Device, DeviceAttributes};
+use crate::{Device, DeviceAttributes, Result};
 use log::{debug, info};
-use std::{error::Error, thread, time::Duration};
+use std::{thread, time::Duration};
 
 pub struct Scanner {
     service_name: String,
@@ -15,16 +15,16 @@ impl Scanner {
         }
     }
 
-    pub fn scan(&mut self) -> Result<Device, Box<dyn Error>> {
+    pub fn scan(&mut self) -> Result<Device> {
         info!("scan for sonoff devices in the current network");
         let mut attrs = DeviceAttributes::default();
         loop {
             for response in
-                mdns::discover::all(&self.service_name)?.timeout(Duration::from_millis(50))
+                mdns::discover::all(&self.service_name)?.timeout(Duration::from_millis(500))
             {
                 for record in response?.records() {
                     if let Some(device) = attrs.add(record) {
-                        if self.not_contains(&device) {
+                        if !self.devices.contains(&device) {
                             self.devices.push(device.clone());
                             return Ok(device);
                         } else {
@@ -33,11 +33,16 @@ impl Scanner {
                     }
                 }
             }
-            thread::sleep(Duration::from_millis(500));
+            thread::sleep(Duration::from_millis(1000));
         }
     }
 
-    fn not_contains(&self, device: &Device) -> bool {
-        !self.devices.contains(device)
+    pub fn scan_loop<F, T>(&mut self, mut cb: F) -> Result<()>
+    where
+        F: FnMut(Result<Device>) -> Result<T>,
+    {
+        loop {
+            cb(self.scan())?;
+        }
     }
 }

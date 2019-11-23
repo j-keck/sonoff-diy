@@ -1,61 +1,71 @@
 use sonoff_diy::*;
-use log::{error, info};
-use serde_json::to_string_pretty;
-use std::{error::Error, io, io::Read};
 
 #[paw::main]
 fn main(args: Args) {
     init_logger(&args);
-
-    // the binary to flash
-    let bin = Binary::new(args.bin).unwrap();
-
-    let httpd = Httpd::new(args.httpd_port, &bin);
-    let mut scanner = Scanner::new(args.service_name);
-    if let Err(err) = scan_loop(&mut scanner, httpd, &bin) {
-        eprintln!("{}", err);
+    if let Err(err) = run(args) {
+        eprintln!("Error: {}", err);
+        err.print_backtrace();
     }
 }
 
-fn scan_loop(scanner: &mut Scanner, httpd: Httpd, bin: &Binary) -> Result<(), Box<dyn Error>> {
-    let device = scanner.scan()?;
+fn run(args: Args) -> Result<()> {
+    let mut device_cache = DeviceCache::load().unwrap_or_default();
 
-    info!("new device found: {:?}", device);
-    match device.info() {
-        Ok(info) => {
-            info!("  infos: {:?}", to_string_pretty(&info));
-            println!("\n\nflash it? [y/N]");
-            if user_resp_was_y() {
-                let httpd_ip = netutils::matching_host_ip_for(&device.ip);
-
-                // start the embedded web-server to serve the firmware
-                let endpoint = httpd.start(&httpd_ip);
-
-                device.unlock();
-                device.flash(endpoint, bin);
-                Ok(())
-            } else {
-                scan_loop(scanner, httpd, bin)
+    Ok(match args.cmd {
+        Command::Scan { service_name } => {
+            let mut scanner = Scanner::new(service_name);
+            scanner.scan_loop(move |device| {
+                let device = device?;
+                println!("{}", device);
+                device_cache.add(&device)
+            })?
+        }
+        Command::List => {
+            for device in device_cache.devices() {
+                println!("{}", device);
             }
         }
-        Err(err) => {
-            error!("unable to fetch device infos: {}", err);
-            scan_loop(scanner, httpd, bin)
-        },
-    }
-}
+        Command::Info { device_id } => {
+            let device = device_cache.lookup(&device_id)?;
+            println!("{}", device.info()?)
+        }
+        Command::Wifi {
+            device_id,
+            essid,
+            pwd,
+        } => {
+            let device = device_cache.lookup(&device_id)?;
+            println!("{}", device.wifi(essid, pwd)?)
+        }
+        Command::Switch { device_id, state } => {
+            let device = device_cache.lookup(&device_id)?;
+            println!("{}", device.switch(state)?)
+        }
+        Command::Unlock { device_id } => {
+            let device = device_cache.lookup(&device_id)?;
+            println!("{}", device.unlock()?)
+        }
+        Command::Flash {
+            device_id,
+            bin,
+            httpd_port,
+        } => {
+            let bin = Binary::new(bin)?;
+            let device = device_cache.lookup(&device_id)?;
 
-fn user_resp_was_y() -> bool {
-    if let Some(c) = io::stdin()
-        .bytes()
-        .next()
-        .and_then(|r| r.ok())
-        .map(|b| b as char)
-    {
-        c == 'y'
-    } else {
-        false
-    }
+            let httpd_ip = netutils::matching_host_ip_for(&device.ip);
+            println!(
+                "startup the embedded web-server at {} to serve the binary",
+                httpd_ip
+            );
+            let httpd = Httpd::new(&httpd_ip, httpd_port, &bin);
+            let (bin_endpoint, hndl) = httpd.start();
+            println!("{}", device.flash(bin_endpoint, &bin)?);
+            println!("hit <CTRL-C> to shudown the embedded web-server");
+            hndl.join().unwrap();
+        }
+    })
 }
 
 fn init_logger(args: &Args) {

@@ -1,19 +1,18 @@
 use ipnet::*;
 use std::net::{IpAddr, SocketAddr};
 
-
 pub fn matching_host_ip_for(other: &IpAddr) -> IpAddr {
     let other: IpAddr = other.to_string().parse().unwrap();
 
     if let Some(ip) = host_ips()
         .into_iter()
-        .find(|host_ip| host_ip.contains(&other)) {
+        .find(|host_ip| host_ip.contains(&other))
+    {
         ip.addr()
     } else {
         panic!("no usable interface found");
     }
 }
-
 
 pub fn host_ips() -> Vec<IpNet> {
     fn prefix_len(addr: SocketAddr) -> u8 {
