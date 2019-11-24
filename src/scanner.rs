@@ -1,5 +1,5 @@
 use crate::{Device, DeviceAttributes, Result};
-use log::{debug, info};
+use log::debug;
 use std::{thread, time::Duration};
 
 pub struct Scanner {
@@ -16,7 +16,6 @@ impl Scanner {
     }
 
     pub fn scan(&mut self) -> Result<Device> {
-        info!("scan for sonoff devices in the current network");
         let mut attrs = DeviceAttributes::default();
         loop {
             for response in

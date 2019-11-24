@@ -103,7 +103,7 @@ impl Device {
     {
         let client = reqwest::Client::new();
         let url = format!("http://{}:{}/zeroconf/{}", self.ip, self.port, p.into());
-        debug!("post to: {} with payload: {:?}", url, serde_json::to_string(&payload));
+        debug!("post to: {} with payload: {:?}", url, to_string_pretty(&payload)?);
         let res = client
             .post(&url)
             .json(&payload)

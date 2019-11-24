@@ -14,6 +14,7 @@ fn run(args: Args) -> Result<()> {
 
     Ok(match args.cmd {
         Command::Scan { service_name } => {
+            println!("scan for devices in the current network");
             let mut scanner = Scanner::new(service_name);
             scanner.scan_loop(move |device| {
                 let device = device?;
@@ -70,8 +71,9 @@ fn run(args: Args) -> Result<()> {
 
 fn init_logger(args: &Args) {
     let filter = {
-        let level = if args.verbose { "debug" } else { "info" };
-        format!("{}={}", env!("CARGO_PKG_NAME"), level)
+        let level = if args.debug { "debug" } else { "info" };
+        let name = env!("CARGO_PKG_NAME").replace("-", "_");
+        format!("{}={}", name, level)
     };
 
     env_logger::from_env(env_logger::Env::default().default_filter_or(filter)).init();

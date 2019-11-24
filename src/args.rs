@@ -3,7 +3,8 @@ use structopt::StructOpt;
 #[derive(StructOpt, Debug)]
 pub struct Args {
     #[structopt(short, long)]
-    pub verbose: bool,
+    /// enable debug logging
+    pub debug: bool,
 
     #[structopt(subcommand)]
     pub cmd: Command,
