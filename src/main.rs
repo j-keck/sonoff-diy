@@ -60,7 +60,7 @@ fn run(args: Args) -> Result<()> {
                 "startup the embedded web-server at {} to serve the binary",
                 httpd_ip
             );
-            let httpd = Httpd::new(&httpd_ip, httpd_port, &bin);
+            let httpd = Httpd::new(&httpd_ip, httpd_port, &bin)?;
             let (bin_endpoint, hndl) = httpd.start();
             println!("{}", device.flash(bin_endpoint, &bin)?);
             println!("hit <CTRL-C> to shudown the embedded web-server");

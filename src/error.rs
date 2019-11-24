@@ -26,6 +26,9 @@ pub enum Error {
 
     #[snafu(display("Parser error: {}", msg))]
     ParserError { msg: String },
+
+    #[snafu(display("Invalid request: {}", msg))]
+    InvalidRequest { msg: String },
 }
 
 impl Error {

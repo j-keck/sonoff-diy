@@ -40,7 +40,7 @@ impl Binary {
         hmac_sha256::Hash::hash(&content)
             .to_vec()
             .iter()
-            .map(|x| format!("{:x}", x))
+            .map(|x| format!("{:02x}", x))
             .collect()
     }
 }
