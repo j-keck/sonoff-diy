@@ -11,7 +11,9 @@ pub struct DeviceCache(Vec<Device>, PathBuf);
 
 impl DeviceCache {
     pub fn new(devices: Vec<Device>) -> Self {
-        Self(devices, ".sonoff-diy-cache.json".into())
+        let mut path = dirs::data_local_dir().unwrap_or("".into());
+        path.push(".sonoff-diy-cache.json");
+        Self(devices, path)
     }
 
     pub fn add(&mut self, device: &Device) -> Result<()> {
