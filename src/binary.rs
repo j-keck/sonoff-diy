@@ -13,11 +13,15 @@ impl Binary {
         let path = path.into();
 
         if !path.exists() {
-            return Err(Error::InvalidBinary{ msg: "not found!".into() });
+            return Err(Error::InvalidBinary {
+                msg: "not found!".into(),
+            });
         }
 
         if !path.is_file() {
-            return Err(Error::InvalidBinary{ msg: "binary must be a file".into() });
+            return Err(Error::InvalidBinary {
+                msg: "binary must be a file".into(),
+            });
         }
 
         Ok(Binary(path))

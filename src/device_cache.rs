@@ -43,8 +43,7 @@ impl DeviceCache {
             .ok_or(Error::DeviceNotFound { device_id })
     }
 
-    pub fn load() -> Result<Self>
-    {
+    pub fn load() -> Result<Self> {
         let mut cache = DeviceCache::new(Vec::new());
         debug!("load cache from {}", cache.1.display());
         let file = File::open(&cache.1)?;

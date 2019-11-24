@@ -26,33 +26,36 @@ impl Httpd {
                 debug!("request headers: {:#?}", cx.headers());
                 match cx.state().slurp() {
                     Ok(content) => {
-                        let resp =
-                            if let Some(range_header) = cx.headers().get("Range") {
-                                match Httpd::parse_range_header(range_header) {
-                                    Ok((from, to)) => {
-                                        let content_range = format!("bytes {}-{}/{}", from, to, content.len());
-                                        let chunk = content[from..=to].to_vec();
+                        let resp = if let Some(range_header) = cx.headers().get("Range") {
+                            match Httpd::parse_range_header(range_header) {
+                                Ok((from, to)) => {
+                                    let content_range =
+                                        format!("bytes {}-{}/{}", from, to, content.len());
+                                    let chunk = content[from..=to].to_vec();
 
-                                        http::Response::builder()
-                                            .status(StatusCode::PARTIAL_CONTENT)
-                                            .header(header::CONTENT_TYPE, "application/octet-stream")
-                                            .header(header::CONTENT_LENGTH, chunk.len())
-                                            .header(header::CONTENT_RANGE, content_range)
-                                            .body(Body::from(chunk))
-                                            .unwrap()
-                                    }
-                                    Err(err) => {
-                                        error!("{}", err);
-                                        return Httpd::error_response(StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
-                                    }
+                                    http::Response::builder()
+                                        .status(StatusCode::PARTIAL_CONTENT)
+                                        .header(header::CONTENT_TYPE, "application/octet-stream")
+                                        .header(header::CONTENT_LENGTH, chunk.len())
+                                        .header(header::CONTENT_RANGE, content_range)
+                                        .body(Body::from(chunk))
+                                        .unwrap()
                                 }
-                            } else {
-                                http::Response::builder()
-                                    .status(StatusCode::OK)
-                                    .header(header::CONTENT_TYPE, "application/octet-stream")
-                                    .header(header::CONTENT_LENGTH, content.len())
-                                    .body(Body::from(content))
-                                    .unwrap()
+                                Err(err) => {
+                                    error!("{}", err);
+                                    return Httpd::error_response(
+                                        StatusCode::INTERNAL_SERVER_ERROR,
+                                        err.to_string(),
+                                    );
+                                }
+                            }
+                        } else {
+                            http::Response::builder()
+                                .status(StatusCode::OK)
+                                .header(header::CONTENT_TYPE, "application/octet-stream")
+                                .header(header::CONTENT_LENGTH, content.len())
+                                .body(Body::from(content))
+                                .unwrap()
                         };
 
                         debug!("response: {:#?}", resp);

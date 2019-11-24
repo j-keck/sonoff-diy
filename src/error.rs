@@ -22,7 +22,7 @@ pub enum Error {
     ReqwestError { source: reqwest::Error },
 
     #[snafu(display("Invalid binary: {}", msg))]
-    InvalidBinary{ msg: String },
+    InvalidBinary { msg: String },
 
     #[snafu(display("Parser error: {}", msg))]
     ParserError { msg: String },
@@ -62,6 +62,8 @@ impl From<reqwest::Error> for Error {
 
 impl From<std::num::ParseIntError> for Error {
     fn from(err: std::num::ParseIntError) -> Self {
-        Error::ParserError { msg: err.to_string() }
+        Error::ParserError {
+            msg: err.to_string(),
+        }
     }
 }

@@ -1,7 +1,7 @@
 use crate::*;
 use log::debug;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value, to_string_pretty, from_str};
+use serde_json::{from_str, json, to_string_pretty, Value};
 use std::{fmt, net::IpAddr};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -30,13 +30,8 @@ impl Device {
             "data": {},
         });
 
-        match self
-            .post("info", payload)?
-            .get("data")
-        {
-            Some(Value::String(ref data)) => {
-                Ok(to_string_pretty(&from_str::<Value>(data)?)?)
-            },
+        match self.post("info", payload)?.get("data") {
+            Some(Value::String(ref data)) => Ok(to_string_pretty(&from_str::<Value>(data)?)?),
             _ => Err(Error::JSONLookupError {
                 msg: "'data' in response not found".to_string(),
             }),
@@ -103,7 +98,11 @@ impl Device {
     {
         let client = reqwest::Client::new();
         let url = format!("http://{}:{}/zeroconf/{}", self.ip, self.port, p.into());
-        debug!("post to: {} with payload: {:?}", url, to_string_pretty(&payload)?);
+        debug!(
+            "post to: {} with payload: {:?}",
+            url,
+            to_string_pretty(&payload)?
+        );
         let res = client
             .post(&url)
             .json(&payload)
@@ -116,12 +115,11 @@ impl Device {
 
     fn post_<S>(&self, p: S, payload: Value) -> Result<String>
     where
-        S: Into<String>
+        S: Into<String>,
     {
         let value = self.post(p, payload)?;
         Ok(to_string_pretty(&value)?)
     }
-
 }
 
 impl fmt::Display for Device {
