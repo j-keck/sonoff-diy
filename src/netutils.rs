@@ -1,20 +1,21 @@
+use crate::*;
 use ipnet::*;
 use std::net::{IpAddr, SocketAddr};
 
-pub fn matching_host_ip_for(other: &IpAddr) -> IpAddr {
+pub fn matching_host_ip_for(other: &IpAddr) -> Result<IpAddr> {
     let other: IpAddr = other.to_string().parse().unwrap();
 
-    if let Some(ip) = host_ips()
+    if let Some(ip) = host_ips()?
         .into_iter()
         .find(|host_ip| host_ip.contains(&other))
     {
-        ip.addr()
+        Ok(ip.addr())
     } else {
-        panic!("no usable interface found");
+        Err(Error::GenericError { msg: "no usable interface found".into() })
     }
 }
 
-pub fn host_ips() -> Vec<IpNet> {
+pub fn host_ips() -> Result<Vec<IpNet>> {
     fn prefix_len(addr: SocketAddr) -> u8 {
         match addr.ip() {
             IpAddr::V4(addr) => addr.octets().to_vec(),
@@ -25,15 +26,14 @@ pub fn host_ips() -> Vec<IpNet> {
         .sum()
     }
 
-    ifaces::ifaces()
-        .expect("unable to lookup interfaces")
+    ifaces::ifaces()?
         .into_iter()
         .filter_map(|iface| match (iface.addr, iface.mask) {
             (Some(SocketAddr::V4(addr)), Some(mask)) => {
-                Some(Ipv4Net::new(*addr.ip(), prefix_len(mask)).unwrap().into())
+                Some(Ok(Ipv4Net::new(*addr.ip(), prefix_len(mask)).unwrap().into()))
             }
             (Some(SocketAddr::V6(addr)), Some(mask)) => {
-                Some(Ipv6Net::new(*addr.ip(), prefix_len(mask)).unwrap().into())
+                Some(Ok(Ipv6Net::new(*addr.ip(), prefix_len(mask)).unwrap().into()))
             }
             _ => None,
         })

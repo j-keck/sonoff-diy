@@ -55,7 +55,7 @@ fn run(args: Args) -> Result<()> {
             let bin = Binary::new(bin)?;
             let device = device_cache.lookup(&device_id)?;
 
-            let httpd_ip = netutils::matching_host_ip_for(&device.ip);
+            let httpd_ip = netutils::matching_host_ip_for(&device.ip)?;
             println!(
                 "startup the embedded web-server at {} to serve the binary",
                 httpd_ip

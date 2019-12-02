@@ -29,6 +29,10 @@ pub enum Error {
 
     #[snafu(display("Invalid request: {}", msg))]
     InvalidRequest { msg: String },
+
+    #[snafu(display("{}", msg))]
+    GenericError { msg: String },
+
 }
 
 impl Error {
