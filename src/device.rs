@@ -77,7 +77,7 @@ impl Device {
         self.post_("wifi", payload)
     }
 
-    pub fn flash<S>(&self, endpoint: S, bin: &Binary) -> Result<String>
+    pub fn flash<S>(&self, endpoint: S, sha256sum: S) -> Result<String>
     where
         S: Into<String>,
     {
@@ -85,7 +85,7 @@ impl Device {
             "deviceid": &self.id,
             "data": {
                 "downloadUrl": endpoint.into(),
-                "sha256sum": bin.sha256sum(),
+                "sha256sum": sha256sum.into(),
             },
         });
 

@@ -32,7 +32,6 @@ pub enum Error {
 
     #[snafu(display("{}", msg))]
     GenericError { msg: String },
-
 }
 
 impl Error {

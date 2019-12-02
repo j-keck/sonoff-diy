@@ -59,12 +59,29 @@ pub enum Command {
         #[structopt(long, short = "id")]
         device_id: String,
 
-        #[structopt(long)]
+        #[structopt(
+            long,
+            conflicts_with = "external_httpd_url",
+            conflicts_with = "bin_sha256sum"
+        )]
         /// firmware binary to flash
-        bin: String,
+        bin: Option<String>,
 
-        #[structopt(long, default_value = "8989")]
+        #[structopt(
+            long,
+            default_value = "8989",
+            conflicts_with = "external_httpd_url",
+            conflicts_with = "bin_sha256sum"
+        )]
         httpd_port: u16,
+
+        #[structopt(long, conflicts_with = "bin", conflicts_with = "httpd_port")]
+        /// use external web-server with the given url (http://<IP>:<PORT>/path/sonoff.bin)
+        external_httpd_url: Option<String>,
+
+        #[structopt(long, conflicts_with = "bin", conflicts_with = "httpd_port")]
+        /// when using the extenal web-server, we need the sha256 sum of the binary on the server
+        bin_sha256sum: Option<String>,
     },
 }
 

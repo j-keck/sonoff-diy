@@ -11,7 +11,9 @@ pub fn matching_host_ip_for(other: &IpAddr) -> Result<IpAddr> {
     {
         Ok(ip.addr())
     } else {
-        Err(Error::GenericError { msg: "no usable interface found".into() })
+        Err(Error::GenericError {
+            msg: "no usable interface found".into(),
+        })
     }
 }
 
@@ -30,10 +32,14 @@ pub fn host_ips() -> Result<Vec<IpNet>> {
         .into_iter()
         .filter_map(|iface| match (iface.addr, iface.mask) {
             (Some(SocketAddr::V4(addr)), Some(mask)) => {
-                Some(Ok(Ipv4Net::new(*addr.ip(), prefix_len(mask)).unwrap().into()))
+                Some(Ok(Ipv4Net::new(*addr.ip(), prefix_len(mask))
+                    .unwrap()
+                    .into()))
             }
             (Some(SocketAddr::V6(addr)), Some(mask)) => {
-                Some(Ok(Ipv6Net::new(*addr.ip(), prefix_len(mask)).unwrap().into()))
+                Some(Ok(Ipv6Net::new(*addr.ip(), prefix_len(mask))
+                    .unwrap()
+                    .into()))
             }
             _ => None,
         })

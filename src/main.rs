@@ -51,20 +51,36 @@ fn run(args: Args) -> Result<()> {
             device_id,
             bin,
             httpd_port,
+            external_httpd_url,
+            bin_sha256sum,
         } => {
-            let bin = Binary::new(bin)?;
             let device = device_cache.lookup(&device_id)?;
 
-            let httpd_ip = netutils::matching_host_ip_for(&device.ip)?;
-            println!(
-                "startup the embedded web-server at {} to serve the binary",
-                httpd_ip
-            );
-            let httpd = Httpd::new(&httpd_ip, httpd_port, &bin)?;
-            let (bin_endpoint, hndl) = httpd.start();
-            println!("{}", device.flash(bin_endpoint, &bin)?);
-            println!("hit <CTRL-C> to shudown the embedded web-server");
-            hndl.join().unwrap();
+            match (bin, external_httpd_url, bin_sha256sum) {
+                (Some(bin), None, None) => {
+                    let bin = Binary::new(bin)?;
+                    let httpd_ip = netutils::matching_host_ip_for(&device.ip)?;
+                    println!(
+                        "startup the embedded web-server at {} to serve the binary",
+                        httpd_ip
+                    );
+                    let httpd = Httpd::new(&httpd_ip, httpd_port, &bin)?;
+                    let (bin_endpoint, hndl) = httpd.start();
+                    println!(
+                        "Initialize flash process: {}",
+                        device.flash(bin_endpoint, bin.sha256sum())?
+                    );
+                    println!("hit <CTRL-C> to shudown the embedded web-server");
+                    hndl.join().unwrap();
+                },
+                (None, Some(external_httpd_url), Some(bin_sha256sum)) => {
+                    println!(
+                        "Initialize flash process: {}",
+                        device.flash(external_httpd_url, bin_sha256sum)?
+                    );
+                },
+                _ => unreachable!(),
+            };
         }
     })
 }
