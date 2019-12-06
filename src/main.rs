@@ -12,7 +12,7 @@ fn main(args: Args) {
 fn run(args: Args) -> Result<()> {
     let mut device_cache = DeviceCache::load().unwrap_or_default();
 
-    Ok(match args.cmd {
+    match args.cmd {
         Command::Scan { service_name } => {
             println!("scan for devices in the current network");
             let mut scanner = Scanner::new(service_name);
@@ -72,17 +72,18 @@ fn run(args: Args) -> Result<()> {
                     );
                     println!("hit <CTRL-C> to shudown the embedded web-server");
                     hndl.join().unwrap();
-                },
+                }
                 (None, Some(external_httpd_url), Some(bin_sha256sum)) => {
                     println!(
                         "Initialize flash process: {}",
                         device.flash(external_httpd_url, bin_sha256sum)?
                     );
-                },
+                }
                 _ => unreachable!(),
             };
         }
-    })
+    };
+    Ok(())
 }
 
 fn init_logger(args: &Args) {
