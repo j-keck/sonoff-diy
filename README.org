@@ -1,0 +1,252 @@
+#+TITLE: sonoff-diy - Control Sonoff DIY devices
+#+PROPERTY: header-args :eval never-export
+
+You can switch the relays, set wifi credentials and flash a new firmware with this tool.
+
+* Intro
+
+I was trying to flash a Sonoff Mini per OTA update.
+
+At first i was trying https://github.com/itead/Sonoff_Devices_DIY_Tools
+
+  - install the executable on an old 32bit windows laptop
+    - executable did not start
+
+  - setup linux on this old laptop
+    - install python, pip, dependencies
+    - QT for python did not exists for 32bit linux
+    - game over
+
+
+Ok - i go with the manual mode
+
+  - use 'ahahi-browse' to search the device
+    - install avahi dameon on my NixOS laptop
+    - device not found
+
+  - use a different distro on a other laptop
+    - install avahi dameon
+    - ok - device found
+    - install a webserver
+    - lookup the sha256sum
+    - use curl and fiddle with with json payload
+    - year - it works, but it was a pain
+
+so i build my own tool:
+
+  - integrated avahi scanner
+  - integrated web-server to serve the binary
+  - -> flash the device with one command - easy!
+
+
+* Installation
+
+Download the binary from: https://github.com/j-keck/sonoff-diy/releases/latest
+
+
+* Usage
+
+#+BEGIN_SRC sh :exports results :results output
+sonoff-diy --help
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+sonoff-diy 0.1.0
+
+USAGE:
+    sonoff-diy [FLAGS] <SUBCOMMAND>
+
+FLAGS:
+    -d, --debug      enable debug logging
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+SUBCOMMANDS:
+    flash     flash the given firmware (--bin) ota
+    help      Prints this message or the help of the given subcommand(s)
+    info      fetch device infos
+    list      List found devices
+    scan      Scan devices
+    switch    switch on / off
+    unlock    unlock the sonoff device to flash it ota
+    wifi      set wifi credentials in the sonoff device
+#+end_example
+
+* Flash
+
+*** Install the DIY Mode jumper
+
+I hope you know how to do this.
+
+*** Setup a new WiFi network
+
+ - with you Phone per 'Hotspot'
+ - or use the 'Guest Wlan' feature from your Access Point
+
+SSID: *sonoffDiy*, Password: *20170618sn*
+
+Make sure the Sonoff device is in your PC and the Sonoff Device are connected
+
+
+*** Lookup the device ID
+
+Disable your Firewall and execute:
+
+  #+BEGIN_SRC sh :eval no
+  sonoff-diy scan
+  #+END_SRC
+
+  #+BEGIN_EXAMPLE
+  device-name: eWeLink_1000xxxxxx, id: 1000xxxxxx, ip: 192.168.179.25
+  <CTRL-C>
+  #+END_EXAMPLE
+
+
+*** Unlock the Sonoff device
+  #+BEGIN_SRC sh :eval no
+  sonoff-diy unlock --device-id 1000xxxxxx
+  #+END_SRC
+
+  #+BEGIN_EXAMPLE
+  {
+    "error": 0,
+    "seq": 2
+  }
+  #+END_EXAMPLE
+
+*** Flash the new firmware
+  #+BEGIN_SRC sh :eval no
+  sonoff-diy flash --device-id 1000xxxxxx --bin tasmota-basic.bin
+  #+END_SRC
+
+  #+BEGIN_EXAMPLE
+  startup the embedded web-server at 192.168.179.20 to serve the binary
+  Initialize flash process: {
+    "error": 0,
+    "seq": 2
+  }
+  hit <CTRL-C> to shudown the embedded web-server
+    0.9% - serve chunk from: 0, to: 4095
+    1.7% - serve chunk from: 4096, to: 8191
+    2.6% - serve chunk from: 8192, to: 12287
+    3.5% - serve chunk from: 12288, to: 16383
+    4.4% - serve chunk from: 16384, to: 20479
+    5.2% - serve chunk from: 20480, to: 24575
+    6.1% - serve chunk from: 24576, to: 28671
+    7.0% - serve chunk from: 28672, to: 32767
+    7.8% - serve chunk from: 32768, to: 36863
+    8.7% - serve chunk from: 36864, to: 40959
+    9.6% - serve chunk from: 40960, to: 45055
+   10.5% - serve chunk from: 45056, to: 49151
+   11.3% - serve chunk from: 49152, to: 53247
+   12.2% - serve chunk from: 53248, to: 57343
+   13.1% - serve chunk from: 57344, to: 61439
+   13.9% - serve chunk from: 61440, to: 65535
+   14.8% - serve chunk from: 65536, to: 69631
+   15.7% - serve chunk from: 69632, to: 73727
+   16.6% - serve chunk from: 73728, to: 77823
+   17.4% - serve chunk from: 77824, to: 81919
+   18.3% - serve chunk from: 81920, to: 86015
+   19.2% - serve chunk from: 86016, to: 90111
+   20.1% - serve chunk from: 90112, to: 94207
+   20.9% - serve chunk from: 94208, to: 98303
+   21.8% - serve chunk from: 98304, to: 102399
+   22.7% - serve chunk from: 102400, to: 106495
+   23.5% - serve chunk from: 106496, to: 110591
+   24.4% - serve chunk from: 110592, to: 114687
+   25.3% - serve chunk from: 114688, to: 118783
+   26.2% - serve chunk from: 118784, to: 122879
+   27.0% - serve chunk from: 122880, to: 126975
+   27.9% - serve chunk from: 126976, to: 131071
+   28.8% - serve chunk from: 131072, to: 135167
+   29.6% - serve chunk from: 135168, to: 139263
+   30.5% - serve chunk from: 139264, to: 143359
+   31.4% - serve chunk from: 143360, to: 147455
+   32.3% - serve chunk from: 147456, to: 151551
+   33.1% - serve chunk from: 151552, to: 155647
+   34.0% - serve chunk from: 155648, to: 159743
+   34.9% - serve chunk from: 159744, to: 163839
+   35.7% - serve chunk from: 163840, to: 167935
+   36.6% - serve chunk from: 167936, to: 172031
+   37.5% - serve chunk from: 172032, to: 176127
+   38.4% - serve chunk from: 176128, to: 180223
+   39.2% - serve chunk from: 180224, to: 184319
+   40.1% - serve chunk from: 184320, to: 188415
+   41.0% - serve chunk from: 188416, to: 192511
+   41.8% - serve chunk from: 192512, to: 196607
+   42.7% - serve chunk from: 196608, to: 200703
+   43.6% - serve chunk from: 200704, to: 204799
+   44.5% - serve chunk from: 204800, to: 208895
+   45.3% - serve chunk from: 208896, to: 212991
+   46.2% - serve chunk from: 212992, to: 217087
+   47.1% - serve chunk from: 217088, to: 221183
+   47.9% - serve chunk from: 221184, to: 225279
+   48.8% - serve chunk from: 225280, to: 229375
+   49.7% - serve chunk from: 229376, to: 233471
+   50.6% - serve chunk from: 233472, to: 237567
+   51.4% - serve chunk from: 237568, to: 241663
+   52.3% - serve chunk from: 241664, to: 245759
+   53.2% - serve chunk from: 245760, to: 249855
+   54.1% - serve chunk from: 249856, to: 253951
+   54.9% - serve chunk from: 253952, to: 258047
+   55.8% - serve chunk from: 258048, to: 262143
+   56.7% - serve chunk from: 262144, to: 266239
+   57.5% - serve chunk from: 266240, to: 270335
+   58.4% - serve chunk from: 270336, to: 274431
+   59.3% - serve chunk from: 274432, to: 278527
+   60.2% - serve chunk from: 278528, to: 282623
+   61.0% - serve chunk from: 282624, to: 286719
+   61.9% - serve chunk from: 286720, to: 290815
+   62.8% - serve chunk from: 290816, to: 294911
+   63.6% - serve chunk from: 294912, to: 299007
+   64.5% - serve chunk from: 299008, to: 303103
+   65.4% - serve chunk from: 303104, to: 307199
+   66.3% - serve chunk from: 307200, to: 311295
+   67.1% - serve chunk from: 311296, to: 315391
+   68.0% - serve chunk from: 315392, to: 319487
+   68.9% - serve chunk from: 319488, to: 323583
+   69.7% - serve chunk from: 323584, to: 327679
+   70.6% - serve chunk from: 327680, to: 331775
+   71.5% - serve chunk from: 331776, to: 335871
+   72.4% - serve chunk from: 335872, to: 339967
+   73.2% - serve chunk from: 339968, to: 344063
+   74.1% - serve chunk from: 344064, to: 348159
+   75.0% - serve chunk from: 348160, to: 352255
+   75.8% - serve chunk from: 352256, to: 356351
+   76.7% - serve chunk from: 356352, to: 360447
+   77.6% - serve chunk from: 360448, to: 364543
+   78.5% - serve chunk from: 364544, to: 368639
+   79.3% - serve chunk from: 368640, to: 372735
+   80.2% - serve chunk from: 372736, to: 376831
+   81.1% - serve chunk from: 376832, to: 380927
+   81.9% - serve chunk from: 380928, to: 385023
+   82.8% - serve chunk from: 385024, to: 389119
+   83.7% - serve chunk from: 389120, to: 393215
+   84.6% - serve chunk from: 393216, to: 397311
+   85.4% - serve chunk from: 397312, to: 401407
+   86.3% - serve chunk from: 401408, to: 405503
+   87.2% - serve chunk from: 405504, to: 409599
+   88.1% - serve chunk from: 409600, to: 413695
+   88.9% - serve chunk from: 413696, to: 417791
+   89.8% - serve chunk from: 417792, to: 421887
+   90.7% - serve chunk from: 421888, to: 425983
+   91.5% - serve chunk from: 425984, to: 430079
+   92.4% - serve chunk from: 430080, to: 434175
+   93.3% - serve chunk from: 434176, to: 438271
+   94.2% - serve chunk from: 438272, to: 442367
+   95.0% - serve chunk from: 442368, to: 446463
+   95.9% - serve chunk from: 446464, to: 450559
+   96.8% - serve chunk from: 450560, to: 454655
+   97.6% - serve chunk from: 454656, to: 458751
+   98.5% - serve chunk from: 458752, to: 462847
+   99.4% - serve chunk from: 462848, to: 466943
+  100.0% - serve chunk from: 466944, to: 469839
+  upload done - resonse: {"error":0}
+  <CTRL-C>
+  #+END_EXAMPLE
+
+
+*** Connect to the 'tasmota-xxxx' wlan
+
+Configure the wlan, restart and reset the device with *Reset 5*
