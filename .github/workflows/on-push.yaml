@@ -1,0 +1,135 @@
+name: validate / test / publish
+on: [push, pull_request]
+
+jobs:
+
+  validate:
+    name: validate [clippy / rustfmt]
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v1
+
+      - name: setup
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: clippy, rustfmt
+
+      - name: clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all --all-features
+
+      - name: rustfmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+
+
+  test:
+     name: run tests
+     runs-on: ubuntu-latest
+     steps:
+      - name: checkout
+        uses: actions/checkout@v1
+
+      - name: setup
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable-${{ matrix.target }}
+          override: true
+
+      - name: test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+
+
+
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+         - x86_64-unknown-linux-gnu
+         - i686-unknown-linux-gnu
+         - x86_64-pc-windows-msvc
+         - i686-pc-windows-msvc
+         - x86_64-apple-darwin
+
+        include:
+         - target: x86_64-unknown-linux-gnu
+           os: ubuntu-latest
+           asset: sonoff-diy-linux-x86_64.tar.gz
+
+         - target: i686-unknown-linux-gnu
+           os: ubuntu-latest
+           asset: sonoff-diy-linux-i686.tar.gz
+
+         - target: x86_64-pc-windows-msvc
+           os: windows-latest
+           asset: sonoff-diy-windows-x86_64.zip
+
+         - target: i686-pc-windows-msvc
+           os: windows-latest
+           asset: sonoff-diy-windows-i686.zip
+
+         - target: x86_64-apple-darwin
+           os: macos-latest
+           asset: sonoff-diy-macos.tar.gz
+
+
+    name: release [${{ matrix.target }}]
+    runs-on: ${{ matrix.os }}
+    steps:
+
+      - name: checkout
+        uses: actions/checkout@v1
+
+       # fix on i686-linux:
+       #   /usr/bin/ld: cannot find Scrt1.o: No such file or directory
+      - name: i686-linux deps
+        if: matrix.target == 'i686-unknown-linux-gnu'
+        run: sudo apt-get update && sudo apt-get install -y gcc-multilib libssl-dev
+
+      - name: setup
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable-${{ matrix.target }}
+          override: true
+
+      - name: build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target ${{ matrix.target }}
+
+      - name: prepare assets [linux / macos]
+        if: matrix.os != 'windows-latest'
+        run: |
+          strip target/${{ matrix.target }}/release/sonoff-diy
+          tar czvf ${{ matrix.asset }} target/${{ matrix.target }}/release/sonoff-diy
+
+      - name: prepare assets [windows]
+        if: matrix.os == 'windows-latest'
+        run: |
+          strip target/${{ matrix.target }}/release/sonoff-diy.exe
+          7z a ${{ matrix.asset }} target/${{ matrix.target }}/release/sonoff-diy.exe
+
+
+      - name: upload assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ matrix.asset }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
