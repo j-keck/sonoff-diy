@@ -130,19 +130,24 @@ jobs:
       - name: prepare assets [linux / macos]
         if: matrix.os != 'windows-latest'
         run: |
-          strip target/${{ matrix.target }}/release/sonoff-diy
-          tar czvf ${{ matrix.asset }} target/${{ matrix.target }}/release/sonoff-diy
+          cd target/${{ matrix.target }}/release/
+          strip sonoff-diy
+          tar czvf ${{ matrix.asset }} sonoff-diy
+          cd -
 
       - name: prepare assets [windows]
         if: matrix.os == 'windows-latest'
         run: |
-          strip target/${{ matrix.target }}/release/sonoff-diy.exe
-          7z a ${{ matrix.asset }} target/${{ matrix.target }}/release/sonoff-diy.exe
+          pushd .
+          cd target/${{ matrix.target }}/release/
+          strip sonoff-diy.exe
+          7z a ${{ matrix.asset }} sonoff-diy.exe
+          popd
 
 
       - name: upload assets
         uses: softprops/action-gh-release@v1
         with:
-          files: ${{ matrix.asset }}
+          files: target/${{ matrix.target }}/release/${{ matrix.asset }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
