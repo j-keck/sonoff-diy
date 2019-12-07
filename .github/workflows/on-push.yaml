@@ -74,8 +74,9 @@ jobs:
          #    fatal error: openssl/opensslconf.h: No such file or directory
          # - i686-unknown-linux-gnu
 
-         - x86_64-pc-windows-msvc
-         - i686-pc-windows-msvc
+         - x86_64-pc-windows-gnu
+         - i686-pc-windows-gnu
+
          - x86_64-apple-darwin
 
         include:
@@ -87,11 +88,11 @@ jobs:
            os: ubuntu-latest
            asset: sonoff-diy-linux-i686.tar.gz
 
-         - target: x86_64-pc-windows-msvc
+         - target: x86_64-pc-windows-gnu
            os: windows-latest
            asset: sonoff-diy-windows-x86_64.zip
 
-         - target: i686-pc-windows-msvc
+         - target: i686-pc-windows-gnu
            os: windows-latest
            asset: sonoff-diy-windows-i686.zip
 
